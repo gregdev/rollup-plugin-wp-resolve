@@ -1,60 +1,56 @@
-const ns        = '@wordpress/';
-const nsExclude = [ 'icons', 'interface' ];
+const ns        = '@wordpress/'
+const nsExclude = ['icons', 'interface']
 
 const external = {
-	'jquery'   : 'window.jQuery',
-	'lodash-es': 'window.lodash',
-	'lodash'   : 'window.lodash',
-	'moment'   : 'window.moment',
-	'react-dom': 'window.ReactDOM',
-	'react'    : 'window.React',
-};
+  'jquery'   : 'window.jQuery',
+  'lodash-es': 'window.lodash',
+  'lodash'   : 'window.lodash',
+  'moment'   : 'window.moment',
+  'react-dom': 'window.ReactDOM',
+  'react'    : 'window.React',
+}
 
-const wordpressMatch = new RegExp( `^${ ns }(?!(${ nsExclude.join('|') })).*$` ); // /^@wordpress\/(?!(icons|interface)).*$/;
+const wordpressMatch = new RegExp(`^${ns}(?!(${nsExclude.join('|')})).*$`) // /^@wordpress\/(?!(icons|interface)).*$/
 
-export default function wpResolve() {
-	return {
-		name: 'wp-resolve',
-		options: ( options ) => {
-			if ( ! Array.isArray( options.external ) ) {
-				options.external = [ options.external ].filter( ext => ext );
-			}
+export default function wpResolve () {
+  return {
+    name: 'wp-resolve',
+    options: (options) => {
+      if (!Array.isArray(options.external)) {
+        options.external = [options.external].filter(Boolean)
+      }
 
-			options.external = options.external.concat( Object.keys( external ) );
-			options.external.push( wordpressMatch );
+      options.external = options.external.concat(Object.keys(external))
+      options.external.push(wordpressMatch)
 
-			return options;
-		},
-		outputOptions: ( outputOptions ) => {
-			const configGlobals = outputOptions.globals;
+      const outputGlobals = options.output.globals
 
-			const resolveGlobals = ( id ) => {
-				// options.globals is an object - defer to it
-				if ( typeof configGlobals === 'object' && configGlobals.hasOwnProperty( id ) && configGlobals[ id ] ) {
-					return configGlobals[ id ];
-				}
+      const resolveGlobals = (id) => {
+        if (typeof outputGlobals === 'object' && outputGlobals.hasOwnProperty(id) && outputGlobals[id]) {
+          return outputGlobals[id]
+        }
 
-				// options.globals is a function - defer to it
-				if ( typeof configGlobals === 'function' ) {
-					const configGlobalId = configGlobals( id );
+        if (typeof outputGlobals === 'function') {
+          const configGlobalId = outputGlobals(id)
 
-					if ( configGlobalId && configGlobalId !== id ) {
-						return configGlobalId;
-					}
-				}
+          if (configGlobalId && configGlobalId !== id) {
+            return configGlobalId
+          }
+        }
 
-				// see if it's a static wp external
-				if ( external.hasOwnProperty( id ) && external[ id ] ) {
-					return external[ id ];
-				}
+        if (external.hasOwnProperty(id) && external[id]) {
+          return external[id]
+        }
 
-				if ( wordpressMatch.test( id ) ) {
-					// convert @namespace/component-name to namespace.componentName
-					return id.replace( new RegExp( `^${ns}` ), 'wp.' ).replace( /\//g, '.' ).replace( /-([a-z])/g, ( _, letter ) => letter.toUpperCase() );
-				}
-			}
+        if (wordpressMatch.test(id)) {
+          // convert @namespace/component-name to namespace.componentName
+          return id.replace(new RegExp(`^${ns}`), 'wp.').replace(/\//g, '.').replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())
+        }
+      }
 
-			outputOptions.globals = resolveGlobals;
-		}
-	}
+      options.output.globals = resolveGlobals
+
+      return options
+    }
+  }
 }
